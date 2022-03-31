@@ -1,0 +1,15 @@
+.main-wrapper {
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+
+  .register-form {
+    mat-card-content mat-form-field {
+      width: 100%;
+    }
+  }
+}
+
+.register {
+  width: 100%;
+}

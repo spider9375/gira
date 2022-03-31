@@ -22,11 +22,9 @@ router.post("/register", async (req, res) => {
     firstName: req.body.firstName,
     lastName: req.body.lastName,
     email: req.body.email,
-    gender: req.body.gender,
     username: req.body.username,
     password: req.body.password,
-    role: "basic",
-    photo: req.body.gender ? "male-avatar.png" : "woman-avatar.png",
+    role: "user",
   });
   try {
     const savedUser = await user.save();
@@ -63,7 +61,7 @@ router.post("/login", async (req, res) => {
       role: user.role,
       username: user.username,
     },
-    process.env.JWT_SECRET_TOKEN,
+    process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
   delete user.password;
