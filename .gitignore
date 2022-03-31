@@ -3,3 +3,5 @@ angular/.angular
 angular/.idea
 angular/.vscode
 angular/node_modules
+node/.env
+node/node_modules
