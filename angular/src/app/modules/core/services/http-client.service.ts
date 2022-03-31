@@ -14,7 +14,7 @@ export class HttpClientService {
     return this.http.get<T>(environment.apiUrl + url)
   }
 
-  public post(url: string, data: any): Observable<Object> {
-    return this.http.post(environment.apiUrl + url, data);
+  public post<T>(url: string, data: any): Observable<T> {
+    return this.http.post<T>(environment.apiUrl + url, data);
   }
 }

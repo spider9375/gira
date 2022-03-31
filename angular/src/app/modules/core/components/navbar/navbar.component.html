@@ -20,9 +20,8 @@
         <mat-icon>voicemail</mat-icon>
         <span>Check voice mail</span>
       </button>
-      <button mat-menu-item>
-        <mat-icon>notifications_off</mat-icon>
-        <span>Disable alerts</span>
+      <button mat-menu-item (click)="logout()">
+        <span>Logout</span>
       </button>
     </mat-menu>
   </div>

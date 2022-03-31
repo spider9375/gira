@@ -1,7 +1,12 @@
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
-import { ILoginModel, IRegisterModel } from "../models";
+import { ILoginModel, IRegisterModel, IUser } from "../models";
 import { HttpClientService } from "./http-client.service";
+
+export interface ILoginResult {
+  token: string,
+  user: IUser,
+}
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +20,7 @@ export class AuthService {
     return this.http.post('register', data);
   }
 
-  public login(data: ILoginModel): Observable<Object> {
-    return this.http.post('register', data);
+  public login(data: ILoginModel): Observable<ILoginResult> {
+    return this.http.post<ILoginResult>('login', data);
   }
 }

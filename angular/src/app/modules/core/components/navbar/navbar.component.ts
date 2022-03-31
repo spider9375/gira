@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AuthStore } from '../../stores/auth.store';
 
 @Component({
   selector: 'app-navbar',
@@ -7,9 +8,14 @@ import { Component, OnInit } from '@angular/core';
 })
 export class NavbarComponent implements OnInit {
 
-  constructor() { }
+  constructor(private authStore: AuthStore) { }
 
   ngOnInit(): void {
+  }
+
+  public logout(): void {
+    localStorage.clear();
+    this.authStore.reset();
   }
 
 }
