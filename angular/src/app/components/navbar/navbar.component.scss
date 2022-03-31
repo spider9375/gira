@@ -1,0 +1,12 @@
+.navbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #7E57C2;
+  color: white;
+
+  .navigation {
+    display: flex;
+    flex-direction: row;
+  }
+}

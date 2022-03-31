@@ -1,0 +1,42 @@
+:host {
+  height: calc(100% - 40px);;
+  display: flex;
+  flex-direction: column;
+}
+
+.mat-drawer-container {
+  height: 100%;
+}
+.menu {
+  background-color: #424242;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1rem;
+}
+
+.content {
+  height: 100%;
+  padding: 1rem;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+
+  .menu {
+    background-color: #424242;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 1rem;
+
+    .item {
+      cursor: pointer;
+    }
+  }
+}

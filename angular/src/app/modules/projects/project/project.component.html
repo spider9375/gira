@@ -1,0 +1,23 @@
+<div>{{projectStore.project?.name}}</div>
+<mat-drawer-container class="example-container" autosize>
+  <mat-drawer #drawer class="example-sidenav" mode="side">
+    <div class="menu">
+      <button mat-button routerLink="backlog">Backlog</button>
+      <button mat-button routerLink="sprint/1">Active sprint</button>
+      <button mat-button routerLink="reports">Reports</button>
+    </div>
+  </mat-drawer>
+
+  <div class="example-sidenav-content">
+    <button type="button" mat-icon-button (click)="drawer.toggle()" matTooltip="Toggle sidenav">
+      <mat-icon *ngIf="!drawer.opened">chevron_right</mat-icon>
+      <mat-icon *ngIf="drawer.opened">chevron_left</mat-icon>
+    </button>
+  </div>
+
+  <div class="content">
+    <router-outlet></router-outlet>
+
+  </div>
+
+</mat-drawer-container>
