@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthStore } from '../../stores/auth.store';
 
 @Component({
@@ -8,14 +9,18 @@ import { AuthStore } from '../../stores/auth.store';
 })
 export class NavbarComponent implements OnInit {
 
-  constructor(private authStore: AuthStore) { }
+  constructor(public authStore: AuthStore, private router: Router) { }
 
   ngOnInit(): void {
   }
 
   public logout(): void {
     localStorage.clear();
-    this.authStore.reset();
+    this.router.navigate(['']);
+  }
+
+  public get isProjectsVisible(): boolean {
+    return this.authStore.isAdmin || this.authStore.isDeveloper || this.authStore.isManager
   }
 
 }

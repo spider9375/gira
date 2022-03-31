@@ -1,26 +1,25 @@
 <div class="navbar">
   <div class="navigation">
-    <div class="link">
-      <button mat-button>Dashboard</button>
-    </div>
-    <div class="link">
-      <button mat-button routerLink="projects">Projects</button>
-    </div>
+    <button routerLink="dashboard" mat-button>Dashboard</button>
+    <button *ngIf="isProjectsVisible" mat-button routerLink="projects">Projects</button>
+    <button mat-button routerLink="users">Users</button>
   </div>
   <div class="profile">
-    <button mat-icon-button [matMenuTriggerFor]="menu">
-      <mat-icon>account_circle</mat-icon>
+    <ng-container *ngIf="!authStore.user">
+      <button routerLink="login" mat-button>Login</button>
+      <button routerLink="register" mat-button>Register</button>
+    </ng-container>
+
+    <button *ngIf="authStore.user" [ngClass]="{ 'no-img': !authStore.user?.photo }" class="profile-btn" mat-icon-button [matMenuTriggerFor]="menu">
+      {{ authStore.userCredentials }}
     </button>
     <mat-menu #menu="matMenu">
       <button mat-menu-item>
-        <mat-icon>dialpad</mat-icon>
-        <span>Redial</span>
-      </button>
-      <button mat-menu-item disabled>
-        <mat-icon>voicemail</mat-icon>
-        <span>Check voice mail</span>
+        <mat-icon>person</mat-icon>
+        <span>Profile</span>
       </button>
       <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
         <span>Logout</span>
       </button>
     </mat-menu>

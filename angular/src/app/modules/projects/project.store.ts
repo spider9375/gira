@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { makeAutoObservable } from "mobx";
-import { IProject } from "./projects.component";
+import { IProject } from "../core/models";
 
 @Injectable()
 export class ProjectStore {

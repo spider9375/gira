@@ -17,4 +17,12 @@ export class HttpClientService {
   public post<T>(url: string, data: any): Observable<T> {
     return this.http.post<T>(environment.apiUrl + url, data);
   }
+
+  public delete(url: string): Observable<void> {
+    return this.http.delete<void>(environment.apiUrl + url);
+  }
+
+  public put<T>(url: string, data: any): Observable<T> {
+    return this.http.put<T>(environment.apiUrl + url, data);
+  }
 }

@@ -2,10 +2,10 @@ const router = require("express").Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { registerValidation, loginValidation } = require("../validation");
-const verifyToken = require("../middlewares/verify-token");
+const verifyToken = require("../middlewares/token-middleware");
 const sendErrorResponse = require("../utils").sendErrorResponse;
 const replaceId = require("../utils").replaceId;
-const User = require("../Models/User");
+const User = require("../models/user");
 
 router.post("/register", async (req, res) => {
   const { error } = await registerValidation(req.body);
@@ -60,6 +60,8 @@ router.post("/login", async (req, res) => {
       userId: user.id,
       role: user.role,
       username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }

@@ -10,3 +10,17 @@
     flex-direction: row;
   }
 }
+
+.profile-btn {
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  height: 30px;
+  width: 30px;
+  margin: 0.1rem;
+
+  &.no-img {
+    background-color: orange;
+  }
+}

@@ -10,4 +10,5 @@ export interface IUser {
   role: string
   updatedAt: string
   username: string
+  photo: string,
 }

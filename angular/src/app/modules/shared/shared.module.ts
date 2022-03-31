@@ -11,6 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import {MatInputModule} from '@angular/material/input';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
   declarations: [],
@@ -25,6 +26,7 @@ import {MatInputModule} from '@angular/material/input';
     MatCardModule,
     MatSelectModule,
     MatInputModule,
+    MatDialogModule,
   ],
   exports: [
     CommonModule,
@@ -39,7 +41,8 @@ import {MatInputModule} from '@angular/material/input';
     MatFormFieldModule,
     MatCardModule,
     MatSelectModule,
-    MatInputModule
+    MatInputModule,
+    MatDialogModule,
   ]
 })
 export class SharedModule { }

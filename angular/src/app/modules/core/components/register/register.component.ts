@@ -19,15 +19,17 @@ export class RegisterComponent implements OnInit {
       username: ['', Validators.required],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      email: ['', Validators.email],
-      password: ['', Validators.min(6)]
+      email: ['', [Validators.email, Validators.required]],
+      password: ['', [Validators.minLength(6), Validators.required]]
     });
   }
 
   public register(): void {
-    const data = this.form.getRawValue();
+    if (this.form.valid) {
+      const data = this.form.getRawValue();
 
-    this.authService.register(data).pipe(take(1)).subscribe(() => this.toastr.success('Registration successful!'));
+      this.authService.register(data).pipe(take(1)).subscribe(() => this.toastr.success('Registration successful!'));
+    }
   }
 
 }

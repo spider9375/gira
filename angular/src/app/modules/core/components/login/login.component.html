@@ -12,13 +12,13 @@
         </mat-form-field>
 
         <mat-form-field>
-          <input formControlName="password" matInput placeholder="Password">
+          <input type="password" formControlName="password" matInput placeholder="Password">
         </mat-form-field>
 
       </mat-card-content>
 
       <mat-card-actions>
-        <button class="login" mat-raised-button color="primary" (click)="register()">Login</button>
+        <button [disabled]="form.invalid" class="login" mat-raised-button color="primary" (click)="register()">Login</button>
       </mat-card-actions>
 
 

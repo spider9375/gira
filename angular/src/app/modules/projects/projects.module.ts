@@ -10,6 +10,7 @@ import { ProjectComponent } from './project/project.component';
 import { BacklogComponent } from './backlog/backlog.component';
 import { SprintComponent } from './sprint/sprint.component';
 import { ReportsComponent } from './reports/reports.component';
+import { ProjectDialogComponent } from './project-dialog/project-dialog.component';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { ReportsComponent } from './reports/reports.component';
     ProjectComponent,
     BacklogComponent,
     SprintComponent,
-    ReportsComponent
+    ReportsComponent,
+    ProjectDialogComponent
   ],
   imports: [
     CommonModule,
