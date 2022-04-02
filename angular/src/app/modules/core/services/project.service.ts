@@ -16,4 +16,12 @@ export class ProjectService {
   public create(project: IProject): Observable<void> {
     return this.http.post<void>('projects', project);
   }
+
+  public update(project: IProject): Observable<void> {
+    return this.http.put<void>(`projects/${project.id}`, project);
+  }
+
+  public delete(projectId: string): Observable<void> {
+    return this.http.delete(`projects/${projectId}`);
+  }
 }

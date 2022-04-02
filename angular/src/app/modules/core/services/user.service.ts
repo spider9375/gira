@@ -9,8 +9,8 @@ import { HttpClientService } from "./http-client.service";
 export class UserService {
   constructor(private http: HttpClientService) {}
 
-  public getUsers(): Observable<IUser[]> {
-    return this.http.get<IUser[]>('users');
+  public getUsers(params?: { role?: string }): Observable<IUser[]> {
+    return this.http.post<IUser[]>('users', { role: params?.role});
   }
 
   public delete(id: string): Observable<void> {

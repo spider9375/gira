@@ -4,7 +4,7 @@ export interface IProject {
   managerId: string
   description: string
   photo: string
-  tasksId: string[]
+  issues: string[]
   team: string[]
   deleted: boolean,
 }

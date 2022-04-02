@@ -1,17 +1,23 @@
 const Project = require('../models/project');
 const User = require('../models/user');
-// const Task = require('../Models/Task')
 const router = require('express').Router();
-const jwt = require('jsonwebtoken');
 const { projectValidation } = require('../validation');
 const verifyToken = require("../middlewares/token-middleware");
 const { verifyRoleOrSelf } = require("../middlewares/role-middleware");
-const { sendErrorResponse, canModifyUser, getBearer } = require("../utils");
+const { sendErrorResponse, role } = require("../utils");
 const { v4: uuidv4 } = require("uuid");
 
-router.get("/", verifyToken, verifyRoleOrSelf(3,false), async (req, res) => {
-
-    const projects = await Project.find();
+router.get("/", verifyToken, async (req, res) => {
+    let projects = await Project.find();
+    const user = await User.findOne({_id: req.userId})
+    switch (req.user.role) {
+        case role.manager:
+        case role.developer:
+            projects = projects.filter(p=> user.projects?.includes(p.id));
+            break;
+        case role.user:
+            return res.status(401).send();
+    }
     if (!projects) return sendErrorResponse(req, res, 204, `No Projects`);
     return res.status(200).send(projects)
 })
@@ -24,10 +30,8 @@ router.post("/",verifyToken, verifyRoleOrSelf(2,false), async (req, res) => {
         name: req.body.name,
         managerId: req.body.managerId,
         description: req.body.description,
-        tasksId: req.body.tasksId ? req.body.tasksId : [],
+        issues: req.body.issues ?? [],
         team: req.body.team,
-        invitationCode: uuidv4().substring(2, 8),
-        company: req.body.company,
         deleted: false,
     })
     try {
@@ -93,7 +97,7 @@ router.put("/:projectId", verifyToken,verifyRoleOrSelf(2,false), async (req, res
           new: true,
         }
       );
-      return res.status(200).send(updated);
+      return res.status(200).send();
     }
   } catch (error) {
     return sendErrorResponse(req, res, 400, `Error while saving the project.`);

@@ -2,13 +2,16 @@ const router = require("express").Router();
 const { userValidation } = require("../validation");
 const verifyToken = require("../middlewares/token-middleware");
 const { verifyRoleOrSelf } = require("../middlewares/role-middleware");
-const { sendErrorResponse, canModifyUser, getBearer } = require("../utils");
+const { sendErrorResponse, canModifyUser } = require("../utils");
 const User = require("../models/user");
 
-router.get("/", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
+router.post("/", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
   const allUsers = await User.find();
+  const roleFilter = req.body.role;
+
+  const filteredUsers = allUsers.filter(user => !roleFilter || user.role === roleFilter);
   if (!allUsers) return sendErrorResponse(req, res, 204, `No users`);
-  return res.status(200).send(allUsers);
+  return res.status(200).send(filteredUsers);
 });
 router.post("/", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
   const { error } = await userValidation(req.body);
@@ -58,8 +61,7 @@ router.put("/:userId", verifyToken, async (req, res) => {
 
   const user = req.body;
 
-  const bearer = getBearer(req);
-  if (!canModifyUser(user.role, bearer.role)) {
+  if (!canModifyUser(user.role, req.user.role)) {
     return sendErrorResponse(req, res, 400, `Your role does not allow modification of this user`);
   }
 

@@ -7,7 +7,7 @@ const projectSchema = new mongoose.Schema(
     managerId: { type: String, required: true },
     description: { type: String, max: 4096 },
     photo: { type: String},
-    tasksId: { type: [String] },
+    issues: { type: [String] },
     team: { type: [String] },
     deleted: { type: Boolean, default: false },
   },

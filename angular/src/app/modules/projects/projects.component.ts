@@ -7,6 +7,7 @@ import { IProject } from '../core/models';
 import { ProjectService } from '../core/services/project.service';
 import { ProjectDialogComponent } from './project-dialog/project-dialog.component';
 import { ProjectStore } from './project.store';
+import {AuthStore} from "../core/stores/auth.store";
 
 @Component({
   selector: 'app-projects',
@@ -14,7 +15,7 @@ import { ProjectStore } from './project.store';
   styleUrls: ['./projects.component.scss']
 })
 export class ProjectsComponent implements OnInit {
-  displayedColumns: string[] = ['id', 'name'];
+  displayedColumns: string[] = ['name', 'description', 'active', 'actions'];
   public dataSource: MatTableDataSource<IProject> = new MatTableDataSource();
 
   constructor(
@@ -23,6 +24,7 @@ export class ProjectsComponent implements OnInit {
       private route: ActivatedRoute,
       private dialog: MatDialog,
       private projectService: ProjectService,
+    public authStore: AuthStore,
       ) { }
 
   ngOnInit(): void {
@@ -34,16 +36,24 @@ export class ProjectsComponent implements OnInit {
     this.router.navigate([`${project.id}`], {relativeTo: this.route});
   }
 
-  public openDialog(projectId?: IProject): void {
-    this.dialog.open(ProjectDialogComponent)
+  public openDialog(project?: IProject): void {
+    this.dialog.open(ProjectDialogComponent, { data: { project }})
     .afterClosed()
     .pipe(filter(x => x), take(1))
     .subscribe((res: IProject) => {
-      if (!projectId) {
+      if (!project) {
         this.projectService.create(res)
+          .pipe(take(1)).subscribe(() => this.init())
+      } else {
+        this.projectService.update(project)
           .pipe(take(1)).subscribe(() => this.init())
       }
     })
+  }
+
+  public delete(projectId: string): void {
+    this.projectService.delete(projectId)
+      .pipe(take(1)).subscribe(() => this.init())
   }
 
   private init(): void {
