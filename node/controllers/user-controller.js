@@ -1,11 +1,14 @@
 const router = require("express").Router();
-const { userValidation } = require("../validation");
-const verifyToken = require("../middlewares/token-middleware");
-const { verifyRoleOrSelf } = require("../middlewares/role-middleware");
-const { sendErrorResponse, canModifyUser } = require("../utils");
+const { userValidation, validate } = require("../validation");
+const authenticated = require("../middlewares/authenticated-middleware");
+const paramsExist = require("../middlewares/params-exist-middleware");
+const { authorized } = require("../middlewares/role-middleware");
+const { sendErrorResponse } = require("../utils");
 const User = require("../models/user");
+const entityNotDeleted = require("../middlewares/entity-not-deleted-middleware");
+const entityExists = require("../middlewares/entity-exists-middleware");
 
-router.post("/", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
+router.post("/", authenticated, async (req, res) => {
   const allUsers = await User.find();
   const roleFilter = req.body.role;
 
@@ -13,7 +16,7 @@ router.post("/", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
   if (!allUsers) return sendErrorResponse(req, res, 204, `No users`);
   return res.status(200).send(filteredUsers);
 });
-router.post("/", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
+router.post("/", authenticated, async (req, res) => {
   const { error } = await userValidation(req.body);
   if (error) return sendErrorResponse(req, res, 400, error.details[0].message, error);
 
@@ -44,9 +47,13 @@ router.post("/", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
 });
 
 //{userId}
-router.get( "/:userId",verifyToken, verifyRoleOrSelf(3, true), async (req, res) => {
+router.get( "/:userId",
+  authenticated,
+  async (req, res) => {
     const { userId } = req.params;
     if (!userId) return sendErrorResponse(req, res, 400, `Missing userId`);
+
+    const schema = User;
 
     const user = await User.findOne({ _id: userId });
     if (!user) return sendErrorResponse(req, res, 400, `There is no user with this id`);
@@ -55,38 +62,35 @@ router.get( "/:userId",verifyToken, verifyRoleOrSelf(3, true), async (req, res) 
   }
 );
 
-router.put("/:userId", verifyToken, async (req, res) => {
-  const { userId } = req.params;
-  if (!userId) return sendErrorResponse(req, res, 400, `Missing userId`);
-
-  const user = req.body;
-
-  if (!canModifyUser(user.role, req.user.role)) {
-    return sendErrorResponse(req, res, 400, `Your role does not allow modification of this user`);
-  }
-
+router.put("/:userId",
+  authenticated,
+  paramsExist(['userId']),
+  entityExists(User, 'userId'),
+  authorized(),
+  entityNotDeleted,
+  async (req, res) => {
   try {
-    const updated = await User.findOneAndUpdate({_id:userId},user,{
-      new: true
-    });
-    return res.status(200).send();
+    Object.assign(req.entity, req.body);
+    await validate(req, res, userValidation, req.entity._doc);
+    await req.entity.save();
 
+    return res.status(200).send();
   } catch (error) {
-    return sendErrorResponse(req, res, 400, `Error while saving the user.`);
+    return sendErrorResponse(req, res, 400, error.message || `Error while saving the user.`);
   }
 });
 
-router.delete( "/:userId", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
-    const { userId } = req.params;
-    if (!userId) return sendErrorResponse(req, res, 400, `Missing userId`);
+router.delete( "/:userId",
+  authenticated,
+  paramsExist(['userId']),
+  entityExists(User, 'userId'),
+  entityNotDeleted,
+  authorized(false),
+  async (req, res) => {
+    req.entity.deleted = true;
+    await req.entity.save();
 
-    const user = await User.findOne({ _id: userId });
-    if (!user) return sendErrorResponse(req, res, 400, `User doesn't exist.`);
-
-    if (user.deleted) return sendErrorResponse(req, res, 400, `User is deleted.`);
-    user.deleted = true;
-    await user.save();
-    return res.status(200).send({message:`User ${user.username} was deleted`});
+    return res.status(200).send({message:`User ${req.entity.username} was deleted`});
   }
 );
 

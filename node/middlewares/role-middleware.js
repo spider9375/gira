@@ -1,5 +1,4 @@
-const jwt = require("jsonwebtoken");
-const replaceId = require("../utils").replaceId;
+const { replaceId, role } = require("../utils");
 const canModifyUser = require("../utils").canModifyUser;
 const canModifyProject = require("../utils").canModifyProject;
 const User = require("../models/user");
@@ -65,6 +64,21 @@ const verifyProject = (role) => {
     }
   };
 };
+
+// depends on req.entity
+const authorized = (allowSelf = true) => {
+  return async function (req, res, next) {
+    if (req.user.role === role.admin
+      || (req.user.role === role.manager && (req.entity.role === role.user || req.entity.role === role.developer))
+      || (allowSelf && req.entity.id === req.userId)) {
+      next();
+    } else {
+      next({status: 400, message: 'Insufficient permissions.'})
+    }
+  }
+}
+
+module.exports.authorized = authorized;
 
 module.exports.verifyRoleOrSelf = verifyRoleOrSelf;
 module.exports.verifyProject = verifyProject;

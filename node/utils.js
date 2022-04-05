@@ -12,17 +12,17 @@ module.exports.sendErrorResponse = function(req, res, status, message, err) {
       code: status,
       message,
       error: err
-  })
+  });
 }
 
-module.exports.canModifyUser = function (role, userRole) {
-  switch (userRole) {
+module.exports.canModifyUser = function (toModify, req) {
+  switch (req.user.role) {
     case ROLES.admin:
       return true;
     case ROLES.manager:
-      return role === ROLES.user || role === ROLES.developer
+      return toModify.role === ROLES.user || toModify.role === ROLES.developer;
     default:
-      return false;
+      return toModify.id === req.userId;
   }
 }
 

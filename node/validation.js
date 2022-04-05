@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const {sendErrorResponse} = require("./utils");
 
 const registerValidation = (data) => {
   const schema = Joi.object({
@@ -32,7 +33,7 @@ const userValidation = (data) => {
     password: Joi.string().regex(/^\$2[ayb]\$.{56}$/),
     email: Joi.string().email().lowercase().required().min(6),
     role: Joi.string().valid("manager", "admin", "user", "developer"),
-    tasks: Joi.array().items(Joi.string().min(24).max(24)).optional(),
+    issues: Joi.array().items(Joi.string().min(24).max(24)).optional(),
     projects: Joi.array().items(Joi.string().min(24).max(24)).optional(),
     deleted: Joi.boolean(),
     photo:Joi.string().uri().optional(),
@@ -75,8 +76,20 @@ const issueValidation = (data) => {
   return schema.validate(data);
 };
 
+const validate = async (req, res, validatorFn, entity) => {
+  const copy = Object.assign({}, entity);
+  copy.id = copy._id.toString();
+  delete copy._id;
+  delete copy.__v;
+  const { error } = validatorFn(copy);
+  if (error) {
+    throw { message: error.details[0].message };
+  }
+}
+
 module.exports.registerValidation = registerValidation;
 module.exports.loginValidation = loginValidation;
 module.exports.projectValidation = projectValidation;
 module.exports.userValidation = userValidation;
 module.exports.issueValidation = issueValidation;
+module.exports.validate = validate;
