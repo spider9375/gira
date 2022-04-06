@@ -77,11 +77,8 @@ const issueValidation = (data) => {
 };
 
 const validate = async (req, res, validatorFn, entity) => {
-  const copy = Object.assign({}, entity);
-  copy.id = copy._id.toString();
-  delete copy._id;
-  delete copy.__v;
-  const { error } = validatorFn(copy);
+  const obj = JSON.parse(JSON.stringify(entity));
+  const { error } = validatorFn(obj);
   if (error) {
     throw { message: error.details[0].message };
   }

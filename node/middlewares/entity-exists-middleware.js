@@ -1,6 +1,6 @@
 module.exports = function (schema, entityIdParam) {
   return async function (req, res, next) {
-    req.entity = await schema.findOne({_id: req.params[entityIdParam]});
+    req.entity = await schema.findById(req.params[entityIdParam]);
     if (req.entity) {
       next();
     } else {

@@ -78,7 +78,18 @@ const authorized = (allowSelf = true) => {
   }
 }
 
+const allowedRoles = (roles) => {
+  return function (req, res, next) {
+    if (roles.includes(req.user.role)) {
+      next();
+    } else {
+      res.status(403).send();
+    }
+  }
+}
+
 module.exports.authorized = authorized;
+module.exports.allowedRoles = allowedRoles;
 
 module.exports.verifyRoleOrSelf = verifyRoleOrSelf;
 module.exports.verifyProject = verifyProject;

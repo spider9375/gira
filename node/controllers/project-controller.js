@@ -1,50 +1,74 @@
 const Project = require('../models/project');
 const User = require('../models/user');
 const router = require('express').Router();
-const { projectValidation } = require('../validation');
-const verifyToken = require("../middlewares/authenticated-middleware");
-const { verifyRoleOrSelf } = require("../middlewares/role-middleware");
+const { projectValidation, validate, userValidation} = require('../validation');
+const authenticated = require("../middlewares/authenticated-middleware");
+const { verifyRoleOrSelf, allowedRoles} = require("../middlewares/role-middleware");
 const { sendErrorResponse, role } = require("../utils");
-const { v4: uuidv4 } = require("uuid");
+const mongoose = require("mongoose");
+const entityExists = require('../middlewares/entity-exists-middleware');
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/",
+  authenticated,
+  async (req, res) => {
     let projects = await Project.find();
-    const user = await User.findOne({_id: req.userId})
-    switch (req.user.role) {
-        case role.manager:
-        case role.developer:
-            projects = projects.filter(p=> user.projects?.includes(p.id));
-            break;
-        case role.user:
-            return res.status(401).send();
+    if (req.user.role === role.admin) {
+      return projects;
     }
-    if (!projects) return sendErrorResponse(req, res, 204, `No Projects`);
-    return res.status(200).send(projects)
-})
-router.post("/",verifyToken, verifyRoleOrSelf(2,false), async (req, res) => {
-
-    const { error } = await projectValidation(req.body);
-    if (error) return sendErrorResponse(req, res, 400, error.details[0].message, error);
-
-    const project = new Project({
-        name: req.body.name,
-        managerId: req.body.managerId,
-        description: req.body.description,
-        issues: req.body.issues ?? [],
-        team: req.body.team,
-        deleted: false,
-    })
-    try {
-        const savedProject = await project.save();
-        const uri = req.baseUrl + `/${savedProject.id}` ;
-        console.log('Created Project: ', savedProject.name);
-        return res.location(uri).status(201).json(savedProject);
-    } catch (error) {
-      return sendErrorResponse(req, res, 500, `Server error: ${error}`, error);
+    if (req.user.role === role.manager || req.user.role === role.developer) {
+      return res.status(200).json(projects.filter(p => req.user.projects?.includes(p. id) && !p.deleted));
     }
+
+    return res.status(401).send();
+})
+router.post("/",
+  authenticated,
+  allowedRoles([role.admin, role.manager]),
+  async (req, res) => {
+  req.body.id = mongoose.Types.ObjectId().toHexString();
+
+  try {
+    await validate(req, res, projectValidation, req.body);
+  } catch (error) {
+    return sendErrorResponse(req, res, 400, error.message);
+  }
+
+  const project = await Project.create({
+      _id: req.body.id,
+      name: req.body.name,
+      managerId: req.body.managerId,
+      description: req.body.description,
+      issues: req.body.issues ?? [],
+      team: req.body.team ?? [],
+      deleted: false,
+  })
+
+  try {
+    const userIds = [...project.team, project.managerId];
+
+    let users = await User.find({_id: {$in: userIds}});
+
+    for (let user of users) {
+      if (user.role !== role.manager && user.role !== role.developer) {
+        throw("Can only assign managers and developers");
+      }
+
+      if (!user.projects?.includes(req.body.id)) {
+        user.projects = [req.body.id, ...user.projects];
+      }
+    }
+
+    await User.bulkSave(users);
+
+    await project.save();
+
+    return res.status(201).send();
+  } catch (error) {
+    return sendErrorResponse(req, res, 500, `Server error: ${error}`, error);
+  }
 })
 
-router.get("/:projectId/tasks", verifyToken, verifyRoleOrSelf(3, false), async (req, res) => {
+router.get("/:projectId/tasks", authenticated, verifyRoleOrSelf(3, false), async (req, res) => {
   const { projectId } = req.params;
     if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
 
@@ -58,7 +82,7 @@ router.get("/:projectId/tasks", verifyToken, verifyRoleOrSelf(3, false), async (
   if (!tasks) return sendErrorResponse(req, res, 204, `No Tasks`);
   return res.status(200).send(tasks);
 });
-router.get("/:projectId",verifyToken, verifyRoleOrSelf(1, false), async (req, res) => {
+router.get("/:projectId",authenticated, verifyRoleOrSelf(1, false), async (req, res) => {
     const { projectId } = req.params;
     if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
     
@@ -76,35 +100,41 @@ router.get("/:projectId",verifyToken, verifyRoleOrSelf(1, false), async (req, re
   }
 );
 
-router.put("/:projectId", verifyToken,verifyRoleOrSelf(2,false), async (req, res) => {
-    const { projectId } = req.params;
-    if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
-    
-    const user = req.user
-    const project = req.body
-    const { error } = await projectValidation(project);
-    if (error) return sendErrorResponse(req, res, 400, error.details[0].message, error);
-  
-  delete (project.id);
-  try {
-    if (user.id === project.managerId || user.role === "admin") {
-      // if (project.deleted)
-      //   return sendErrorResponse(req, res, 400, `Project is deleted.`);
-      const updated = await Project.findOneAndUpdate(
-        { _id: projectId },
-        project,
-        {
-          new: true,
-        }
-      );
-      return res.status(200).send();
+router.put("/:projectId",
+  authenticated,
+  entityExists(Project, 'projectId'),
+  allowedRoles([role.admin, role.manager]),
+  async (req, res) => {
+    try {
+      const existingUserIds = [...req.entity.team, req.entity.managerId].filter(x => x);
+      Object.assign(req.entity, req.body);
+      await validate(req, res, projectValidation, req.entity);
+      await req.entity.save();
+
+      const newIds = [...req.body.team ?? [], req.body.managerId].filter(x => x);
+      const removedUserIds = existingUserIds.filter(id => !newIds.includes(id));
+      const addedUserIds = newIds.filter(id => !existingUserIds.includes(id));
+
+      const removedUsers = await User.find({_id: { $in: removedUserIds }});
+      for (let removedUser of removedUsers) {
+        removedUser.projects = removedUser.projects.filter(id => id !== req.entity.id);
+      }
+
+      const addedUsers = await User.find({_id: { $in: addedUserIds }});
+      for (let addedUser of addedUsers) {
+        addedUser.projects.push(req.entity.id);
+      }
+
+      await User.bulkSave(removedUsers.concat(addedUsers));
+
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
     }
-  } catch (error) {
-    return sendErrorResponse(req, res, 400, `Error while saving the project.`);
-  }
+
+    res.status(201).send();
 });
 
-router.delete("/:projectId", verifyToken, verifyRoleOrSelf(2, false), async (req, res) => {
+router.delete("/:projectId", authenticated, verifyRoleOrSelf(2, false), async (req, res) => {
     const { projectId } = req.params;
     if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
     
@@ -123,7 +153,7 @@ router.delete("/:projectId", verifyToken, verifyRoleOrSelf(2, false), async (req
 );
 
 
-router.get( "/myprojects/:userId",verifyToken, verifyRoleOrSelf(3, true), async (req, res) => {
+router.get( "/myprojects/:userId",authenticated, verifyRoleOrSelf(3, true), async (req, res) => {
   const { userId } = req.params;
   if (!userId) return sendErrorResponse(req, res, 400, `Missing userId`);
   
@@ -133,7 +163,7 @@ router.get( "/myprojects/:userId",verifyToken, verifyRoleOrSelf(3, true), async 
     return res.status(200).send(projects);
 });
 
-router.post("/join/:code",verifyToken,verifyRoleOrSelf(3,true),async(req,res)=>{
+router.post("/join/:code",authenticated,verifyRoleOrSelf(3,true),async(req,res)=>{
   
   const { code } = req.params;
   if (!code) return sendErrorResponse(req, res, 400, `Missing code`);
@@ -164,7 +194,7 @@ router.post("/join/:code",verifyToken,verifyRoleOrSelf(3,true),async(req,res)=>{
 
 });
   
-router.post("/leave/:projectId",verifyToken,verifyRoleOrSelf(3,true),async(req,res)=>{
+router.post("/leave/:projectId",authenticated,verifyRoleOrSelf(3,true),async(req,res)=>{
   
   const { projectId } = req.params;
   if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);

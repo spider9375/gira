@@ -8,7 +8,9 @@ const User = require("../models/user");
 const entityNotDeleted = require("../middlewares/entity-not-deleted-middleware");
 const entityExists = require("../middlewares/entity-exists-middleware");
 
-router.post("/", authenticated, async (req, res) => {
+router.post("/",
+  authenticated,
+  async (req, res) => {
   const roleFilter = req.body.role;
   const users = roleFilter ? await User.find({ role: roleFilter }) : await User.find();
 
@@ -18,14 +20,12 @@ router.post("/", authenticated, async (req, res) => {
 
 router.get( "/:userId",
   authenticated,
+  paramsExist(['userId']),
+  entityExists(User, 'userId'),
+  authorized(),
+  entityNotDeleted,
   async (req, res) => {
-    const { userId } = req.params;
-    if (!userId) return sendErrorResponse(req, res, 400, `Missing userId`);
-
-    const user = await User.findOne({ _id: userId });
-    if (!user) return sendErrorResponse(req, res, 400, `There is no user with this id`);
-    //delete(user.password)
-    return res.status(200).send(user);
+    return res.status(200).send(req.entity);
   }
 );
 
@@ -38,7 +38,7 @@ router.put("/:userId",
   async (req, res) => {
   try {
     Object.assign(req.entity, req.body);
-    await validate(req, res, userValidation, req.entity._doc);
+    await validate(req, res, userValidation, req.entity);
     await req.entity.save();
 
     return res.status(200).send();
