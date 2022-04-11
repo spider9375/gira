@@ -1,12 +1,16 @@
 const Project = require('../models/project');
 const User = require('../models/user');
 const router = require('express').Router();
-const { projectValidation, validate, userValidation} = require('../validation');
+const { projectValidation, validate, issueValidation, sprintValidation} = require('../validation');
 const authenticated = require("../middlewares/authenticated-middleware");
-const { verifyRoleOrSelf, allowedRoles} = require("../middlewares/role-middleware");
-const { sendErrorResponse, role } = require("../utils");
+const { allowedRoles, canAccessProject} = require("../middlewares/role-middleware");
+const { sendErrorResponse, role, status} = require("../utils");
 const mongoose = require("mongoose");
 const entityExists = require('../middlewares/entity-exists-middleware');
+const entityNotDeleted = require('../middlewares/entity-not-deleted-middleware');
+const paramsExist = require("../middlewares/params-exist-middleware");
+const Issue = require("../models/issue");
+const Sprint = require("../models/sprint");
 
 router.get("/",
   authenticated,
@@ -21,6 +25,18 @@ router.get("/",
 
     return res.status(401).send();
 })
+
+router.get("/:projectId",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  canAccessProject,
+  async (req, res) => {
+    res.status(200).send(req.entity);
+  }
+);
+
 router.post("/",
   authenticated,
   allowedRoles([role.admin, role.manager]),
@@ -68,40 +84,9 @@ router.post("/",
   }
 })
 
-router.get("/:projectId/tasks", authenticated, verifyRoleOrSelf(3, false), async (req, res) => {
-  const { projectId } = req.params;
-    if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
-
-  const tasks = await Task.find({projectId:projectId}).lean();
-  // var fullTasks = tasks.map((task)=>{
-    
-  //   const fullTask = {
-
-  //   }
-  // })
-  if (!tasks) return sendErrorResponse(req, res, 204, `No Tasks`);
-  return res.status(200).send(tasks);
-});
-router.get("/:projectId",authenticated, verifyRoleOrSelf(1, false), async (req, res) => {
-    const { projectId } = req.params;
-    if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
-    
-    const user = req.user
-    const project = await Project.findOne({ _id: projectId });
-    if (!project) return sendErrorResponse(req, res, 400, `There is no project with this id`);
-    
-    if (user.id === project.managerId || user.role === "admin" || project.team.includes(user.id)) {
-      if (project.deleted) return sendErrorResponse(req, res, 400, `Project is deleted.`);
-      const manager = await User.findOne({_id: project.managerId})
-      const team = await User.find({_id: {$in: project.team}})
-      return res.status(200).send({project,manager,team});
-    }
-    return sendErrorResponse(req, res, 403, `Not enough privilegies.`);
-  }
-);
-
 router.put("/:projectId",
   authenticated,
+  paramsExist(['projectId']),
   entityExists(Project, 'projectId'),
   allowedRoles([role.admin, role.manager]),
   async (req, res) => {
@@ -134,109 +119,202 @@ router.put("/:projectId",
     res.status(201).send();
 });
 
-router.delete("/:projectId", authenticated, verifyRoleOrSelf(2, false), async (req, res) => {
-    const { projectId } = req.params;
-    if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
-    
-    const user = req.user
-    const project = await Project.findOne({ _id: projectId });
-    if (!project) return sendErrorResponse(req, res, 400, `There is no project with this id`);
-    
-    if(user.id===project.managerId || user.role==='admin'){
-        if (project.deleted) return sendErrorResponse(req, res, 400, `Project is deleted.`);
-        project.deleted = true;
-        await project.save();
-        return res.status(200).send({message:`Project- ${project.name} was deleted`});
+router.delete("/:projectId",
+  authenticated,
+  paramsExist(['projectId']),
+  allowedRoles([role.admin]),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  async (req, res) => {
+    req.entity.deleted = true;
+    await req.entity.save();
+
+    req.status(200).send();
+  });
+
+router.get("/:projectId/sprints",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  canAccessProject,
+  async (req, res) => {
+    const sprints = await Sprint.find({project: req.params.projectId });
+
+    res.status(200).send(sprints);
+  });
+
+router.post("/:projectId/sprints",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  allowedRoles([role.admin, role.manager]),
+  async (req, res) => {
+    req.body.id = mongoose.Types.ObjectId().toHexString();
+    req.body.status = 'inactive';
+
+    try {
+      await validate(req, res, sprintValidation, req.body);
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
     }
-    return sendErrorResponse(req, res, 403, `Not enough privilegies.`);
-  }
-);
 
+    const newSprint = {
+      _id: req.body.id,
+      start: req.body.start,
+      end: req.body.end,
+      title: req.body.title,
+      status: 'inactive',
+      addedBy: req.userId,
+      project: req.params.projectId,
+      deleted: false,
+    }
 
-router.get( "/myprojects/:userId",authenticated, verifyRoleOrSelf(3, true), async (req, res) => {
-  const { userId } = req.params;
-  if (!userId) return sendErrorResponse(req, res, 400, `Missing userId`);
-  
-  const projects = await Project.find({ 
-    $or: [{ team: userId }, { managerId: userId }], deleted:false });
-  if (!projects) return sendErrorResponse(req, res, 400, `There is no projects with this user`);
-    return res.status(200).send(projects);
+    await Sprint.create(newSprint)
+
+    res.status(201).send();
+  });
+
+router.put('/:projectId/sprints/:sprintId',
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityExists(Sprint, 'sprintId'),
+  entityNotDeleted,
+  allowedRoles([role.admin, role.manager]),
+  async (req, res) => {
+    Object.assign(req.entity, req.body);
+
+    try {
+      await validate(req, res, sprintValidation, req.entity);
+      await req.entity.save();
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
+    }
+
+    res.status(200).send();
+  });
+
+router.delete('/:projectId/sprints/:sprintId',
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityExists(Sprint, 'sprintId'),
+  entityNotDeleted,
+  allowedRoles([role.admin, role.manager]),
+  async (req, res) => {
+    req.entity.deleted = true;
+
+    try {
+      await validate(req, res, sprintValidation, req.entity);
+      await req.entity.save();
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
+    }
+
+    res.status(200).send();
+  });
+
+router.get("/:projectId/issues",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  canAccessProject,
+  async (req, res) => {
+    const issues = await Issue.find({_id: { $in: req.entity.issues } });
+
+    res.status(200).send(issues);
 });
 
-router.post("/join/:code",authenticated,verifyRoleOrSelf(3,true),async(req,res)=>{
-  
-  const { code } = req.params;
-  if (!code) return sendErrorResponse(req, res, 400, `Missing code`);
+router.post("/:projectId/issues",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  allowedRoles([role.admin, role.manager]),
+  async (req, res) => {
+    req.body.id = mongoose.Types.ObjectId().toHexString();
 
-  const loggedUser  = req.user;
-  if (!loggedUser) return sendErrorResponse(req, res, 400, `Missing user`);
+    const issue = await Issue.create({
+      _id: req.body.id,
+      title: req.body.title,
+      status: status.backlog,
+      addedBy: req.userId,
+      sprint: req.body.sprint,
+      assignedTo: req.body.assignedTo,
+      project: req.params.projectId,
+      storyPoints: req.body.storyPoints,
+      description: req.body.description,
+      blockedBy: req.body.blockedBy,
+      deleted: false,
+    })
 
-  const project = await Project.findOne({ invitationCode: code });
-  if (!project) return sendErrorResponse(req, res, 400, `Invalid Code`);
+    try {
+      await validate(req, res, issueValidation, issue);
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
+    }
 
-  const user = await User.findOne({ _id: loggedUser.id });
-  if (!user) return sendErrorResponse(req, res, 400, `There is no user with this id`);
-//user.project -BAD
- if (user.projects && !user.projects.includes(project.id) && !project.team.includes(user.id)) {
-   user.projects.push(project.id);
-   project.team.push(user.id);
- }else return sendErrorResponse(req, res, 400, `Already assigned to the project`);
- 
-  try {
-    await user.save();
-    await project.save();
-    const uri = req.baseUrl + `/${project.id}` ;
-    console.log('Added to Project: ', project.name);
-    return res.status(200).location(`${uri}`).send(project)
-  } catch (error) {
-    return sendErrorResponse(req, res, 500, error);
-  }
+    const user = await User.findById(req.body.assignedTo);
 
-});
-  
-router.post("/leave/:projectId",authenticated,verifyRoleOrSelf(3,true),async(req,res)=>{
-  
-  const { projectId } = req.params;
-  if (!projectId) return sendErrorResponse(req, res, 400, `Missing projectId`);
+    if (user) {
+      user.issues.push(req.body.id);
+    }
 
-  const loggedUser  = req.user;
-  if (!loggedUser) return sendErrorResponse(req, res, 400, `Missing user`);
+    try {
+      if (user) {
+        await user.save();
+      }
+      await issue.save();
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
+    }
 
-  const project = await Project.findOne({ _id: projectId });
-  if (!project) return sendErrorResponse(req, res, 400, `Invalid projectId`);
 
-  const user = await User.findOne({ _id: loggedUser.id });
-  if (!user) return sendErrorResponse(req, res, 400, `There is no user with this id`);
-  //user.projects = undefined
-if(user.id===project.managerId){
-  return sendErrorResponse(req, res, 403, `Manager can't leave the project`);
-}
- if (user.projects.includes(project.id) || project.team.includes(user.id)) {
-
-  var filteredTeam = project.team.filter(userId => 
-    userId !== user.id
-   );
-
-  var filtered = user.projects.filter(prId => 
-    prId !== project.id
-   );
-   
-
-  project.team = filteredTeam;
-  user.projects = filtered;
- } else return sendErrorResponse(req, res, 400, `Not assigned to the project`);
- 
-
-  try {
-    await user.save();
-    await project.save()
-    console.log('Removed From project: ', project.name);
-    return res.status(200).send(project)
-  } catch (error) {
-    return sendErrorResponse(req, res, 500, error);
-  }
-
+    res.status(201).send();
 });
 
+router.put("/:projectId/issues/:issueId",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Issue, 'issueId'),
+  entityNotDeleted,
+  allowedRoles([role.admin, role.manager]),
+  async (req, res) => {
+    const prevAssigned = req.entity.assignedTo;
+    const newAssigned = req.body.assignedTo;
+    const usersUpdated = [];
+
+    if (prevAssigned !== newAssigned) {
+      const user = await User.findById(prevAssigned);
+
+      if (user) {
+        user.issues = user.issues.filter(i => i !== req.entity.id);
+        usersUpdated.push(user);
+        req.entity.assignedTo = '';
+      }
+
+      if (newAssigned) {
+        const newUser = await User.findById(newAssigned);
+        newUser.issues.push(req.entity.id);
+        usersUpdated.push(newUser);
+      }
+    }
+
+    Object.assign(req.entity, req.body);
+
+    try {
+      await validate(req, res, issueValidation, req.entity);
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
+    }
+
+    await User.bulkSave(usersUpdated);
+    await req.entity.save();
+
+    res.status(200).send();
+  });
 
 module.exports = router;

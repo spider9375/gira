@@ -26,16 +26,19 @@ module.exports.canModifyUser = function (toModify, req) {
   }
 }
 
-const ROLES = {
-    user: 'user',
-    developer: 'developer',
-    manager: 'manager',
-    admin: 'admin'
+module.exports.role = {
+  user: 'user',
+  developer: 'developer',
+  manager: 'manager',
+  admin: 'admin'
 }
 
-module.exports.role = ROLES
-
-// todo
-module.exports.canModifyProject = function () {
- return true
+module.exports.status = {
+  backlog: 'backlog',
+  todo: 'todo',
+  inProgress: 'inProgress',
+  pr: 'pr',
+  qa: 'qa',
+  done: 'done',
+  closed: 'closed'
 }

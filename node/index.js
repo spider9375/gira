@@ -7,7 +7,6 @@ const morgan = require('morgan')
 const mongoose = require('./mongoose');
 const authController = require('./controllers/auth-controller')
 const userController = require('./controllers/user-controller')
-// const issueController = require('./controllers/issue-controller')
 const projectController = require('./controllers/project-controller')
 const sendErrorResponse = require('./utils').sendErrorResponse;
 
@@ -19,7 +18,6 @@ app.use(cors(corsOptions))
 app.use(express.json({limit: '50mb'}));
 app.use(express.static('public'))
 app.use('/api/users', userController)
-// app.use('/api/issues', issueController)
 app.use('/api/projects', projectController)
 app.use('/api', authController)
 

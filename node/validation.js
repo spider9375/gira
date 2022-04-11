@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const {sendErrorResponse} = require("./utils");
+const {sendErrorResponse, status} = require("./utils");
 
 const registerValidation = (data) => {
   const schema = Joi.object({
@@ -61,14 +61,32 @@ const projectValidation = (data) => {
 
 const issueValidation = (data) => {
   const schema = Joi.object({
-    id: Joi.string().min(24).max(24),
-    projectId: Joi.string().min(24).max(24),
-    assignedBy: Joi.string().min(24).max(24),
-    assignedTo: Joi.string().min(24).max(24),
-    label: Joi.string().min(3).max(256).required(),
-    description: Joi.string().min(3).max(4096),
-    status: Joi.string().valid("todo","inprogress","review","done"),
-    blockedBy: Joi.array().items(Joi.string().min(24).max(24)).optional(),
+    id: Joi.string().min(24).max(24).required(),
+    project: Joi.string().min(24).max(24).required(),
+    addedBy: Joi.string().min(24).max(24).required(),
+    assignedTo: Joi.string().allow('').min(24).max(24).optional(),
+    storyPoints: Joi.number().min(0).optional(),
+    sprint: Joi.string().min(24).max(24).required().optional(),
+    title: Joi.string().min(3).max(256).required(),
+    description: Joi.string().min(3).max(4096).optional(),
+    status: Joi.string(),
+    blockedBy: Joi.string().min(24).max(24).required().optional(),
+    updatedAt: Joi.date(),
+    createdAt: Joi.date(),
+    deleted: Joi.boolean(),
+  });
+  return schema.validate(data);
+};
+
+const sprintValidation = (data) => {
+  const schema = Joi.object({
+    id: Joi.string().min(24).max(24).required(),
+    title:  Joi.string().min(3).max(128).required(),
+    start: Joi.date().required(),
+    status: Joi.string().valid(['active', 'inactive']).required(),
+    end: Joi.date().required(),
+    project: Joi.string().min(24).max(24).required(),
+    issues: Joi.array().items(Joi.string().length(24)).optional(),
     updatedAt: Joi.date(),
     createdAt: Joi.date(),
     deleted: Joi.boolean(),
@@ -89,4 +107,5 @@ module.exports.loginValidation = loginValidation;
 module.exports.projectValidation = projectValidation;
 module.exports.userValidation = userValidation;
 module.exports.issueValidation = issueValidation;
+module.exports.sprintValidation = sprintValidation;
 module.exports.validate = validate;
