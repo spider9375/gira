@@ -4,7 +4,7 @@ module.exports = function (schema, entityIdParam) {
     if (req.entity) {
       next();
     } else {
-      res.status(400).send({message: 'Entity does not exist'});
+      res.status(404).send({message: 'Entity does not exist'});
     }
   }
 }

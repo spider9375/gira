@@ -12,13 +12,16 @@ const paramsExist = require("../middlewares/params-exist-middleware");
 const Issue = require("../models/issue");
 const Sprint = require("../models/sprint");
 
-router.get("/",
+// Get All Projects
+router.get("",
   authenticated,
   async (req, res) => {
-    let projects = await Project.find();
+    const projects = await Project.find();
+
     if (req.user.role === role.admin) {
       res.status(200).send(projects);
     }
+
     if (req.user.role === role.manager || req.user.role === role.developer) {
       res.status(200).json(projects.filter(p => (p.team.includes(req.userId) || p.managerId === req.userId) && !p.deleted));
     }
@@ -62,23 +65,19 @@ router.post("/",
   try {
     const userIds = [...project.team, project.managerId];
 
-    let users = await User.find({_id: {$in: userIds}});
+    const users = await User.find({_id: {$in: userIds}}) ?? [];
 
-    for (let user of users) {
-      if (user.role !== role.manager && user.role !== role.developer) {
-        throw("Can only assign managers and developers");
-      }
-
-      if (!user.projects?.includes(req.body.id)) {
-        user.projects = [req.body.id, ...user.projects];
-      }
+    if (users.includes(user => user.role !== role.manager && user.role !== role.developer)) {
+      throw("Can only assign managers and developers");
     }
 
-    await User.bulkSave(users);
+    if (users.length !== userIds.length) {
+      throw("Some of user ids are invalid");
+    }
 
     await project.save();
 
-    return res.status(201).send();
+    return res.status(201).header('Location', `api/projects/${req.body.id}`).send();
   } catch (error) {
     return sendErrorResponse(req, res, 500, `Server error: ${error}`, error);
   }
@@ -91,32 +90,26 @@ router.put("/:projectId",
   allowedRoles([role.admin, role.manager]),
   async (req, res) => {
     try {
-      const existingUserIds = [...req.entity.team, req.entity.managerId].filter(x => x);
       Object.assign(req.entity, req.body);
+      const userIds = [...req.entity.team, req.entity.managerId];
+
+      const users = await User.find({_id: {$in: userIds}}) ?? [];
+
+      if (users.includes(user => user.role !== role.manager && user.role !== role.developer)) {
+        throw("Can only assign managers and developers");
+      }
+
+      if (users.length !== userIds.length) {
+        throw("Some of user ids are invalid");
+      }
+
       await validate(req, res, projectValidation, req.entity);
       await req.entity.save();
-
-      const newIds = [...req.body.team ?? [], req.body.managerId].filter(x => x);
-      const removedUserIds = existingUserIds.filter(id => !newIds.includes(id));
-      const addedUserIds = newIds.filter(id => !existingUserIds.includes(id));
-
-      const removedUsers = await User.find({_id: { $in: removedUserIds }});
-      for (let removedUser of removedUsers) {
-        removedUser.projects = removedUser.projects.filter(id => id !== req.entity.id);
-      }
-
-      const addedUsers = await User.find({_id: { $in: addedUserIds }});
-      for (let addedUser of addedUsers) {
-        addedUser.projects.push(req.entity.id);
-      }
-
-      await User.bulkSave(removedUsers.concat(addedUsers));
-
     } catch (error) {
       return sendErrorResponse(req, res, 400, error.message);
     }
 
-    res.status(201).send();
+    res.status(200).send();
 });
 
 router.delete("/:projectId",
@@ -153,7 +146,11 @@ router.get("/:projectId/sprints/active",
   async (req, res) => {
     const sprint = await Sprint.findOne({project: req.params.projectId, isActive: true });
 
-    res.status(200).send(sprint);
+    if (sprint){
+      res.status(200).send(sprint);
+    } else {
+      res.status(404).send();
+    }
   });
 
 router.post("/:projectId/sprints",
@@ -216,7 +213,6 @@ router.delete('/:projectId/sprints/:sprintId',
     req.entity.deleted = true;
 
     try {
-      await validate(req, res, sprintValidation, req.entity);
       await req.entity.save();
     } catch (error) {
       return sendErrorResponse(req, res, 400, error.message);
@@ -233,14 +229,8 @@ router.get("/:projectId/issues",
   entityNotDeleted,
   canAccessProject,
   async (req, res) => {
-    const issues = (await Issue.find({project: req.params.projectId, deleted: false })).map(i => i.toJSON());
-
-    for (const issue of issues) {
-      if (issue.sprint) {
-        const sprint = await Sprint.findById(issue.sprint);
-        issue.sprint = sprint.title;
-      }
-    }
+    const issues = (await Issue.find({project: req.params.projectId, deleted: false }) ?? [])
+      .map(i => i.toJSON());
 
     res.status(200).send(issues);
 });
@@ -262,7 +252,7 @@ router.post("/:projectId/issues/filtered",
       query.sprint = req.body.sprint;
     }
 
-    const issues = (await Issue.find(query)).map(i => i.toJSON());
+    const issues = (await Issue.find(query) ?? []).map(i => i.toJSON());
 
     res.status(200).send(issues);
   });
@@ -297,23 +287,15 @@ router.post("/:projectId/issues",
     }
 
     try {
-      let user = null;
-
       if (req.body.assignedTo) {
-      user = await User.findById(req.body.assignedTo);
+      const user = await User.findById(req.body.assignedTo);
 
-      if (user) {
-        user.issues.push(req.body.id);
+      if (!user) {
+        throw('Invalid assigned user')
       }
     }
 
-    req.entity.issues.push(issue.id);
-
-      if (user) {
-        await user.save();
-      }
       await issue.save();
-      await req.entity.save();
     } catch (error) {
       sendErrorResponse(req, res, 400, error.message);
     }
@@ -328,25 +310,10 @@ router.put("/:projectId/issues/:issueId",
   entityNotDeleted,
   allowedRoles([role.admin, role.manager]),
   async (req, res) => {
-    const prevAssigned = req.entity.assignedTo;
-    const newAssigned = req.body.assignedTo;
-    const usersUpdated = [];
+    const user = await User.findById(req.body.assignedTo);
 
-    if (newAssigned && prevAssigned !== newAssigned) {
-      const user = await User.findById(prevAssigned);
-
-      if (user) {
-        user.issues = user.issues.filter(i => i !== req.entity.id);
-        usersUpdated.push(user);
-        req.entity.assignedTo = '';
-      }
-
-      if (newAssigned) {
-        const newUser = await User.findById(newAssigned);
-        newUser.issues.push(req.entity.id);
-        usersUpdated.push(newUser);
-      }
-
+    if (!user){
+      throw('Assigned user does not exist')
     }
 
     Object.assign(req.entity, req.body);
@@ -374,7 +341,6 @@ router.delete('/:projectId/issues/:issueId',
     req.entity.deleted = true;
 
     try {
-      await validate(req, res, issueValidation, req.entity);
       await req.entity.save();
     } catch (error) {
       return sendErrorResponse(req, res, 400, error.message);

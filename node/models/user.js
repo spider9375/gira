@@ -38,12 +38,6 @@ const userSchema = new mongoose.Schema({
     min: 6,
     max: 512,
   },
-  // projects: {
-  //   type:[String]
-  // },
-  // issues: {
-  //   type:[String]
-  // },
   role: {
     type: String,
     default: 'user',
