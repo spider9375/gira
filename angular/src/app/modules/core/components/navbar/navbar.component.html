@@ -1,8 +1,8 @@
 <div class="navbar">
   <div class="navigation">
     <button routerLink="dashboard" mat-button>Dashboard</button>
-    <button *ngIf="isProjectsVisible" mat-button routerLink="projects">Projects</button>
-    <button mat-button routerLink="users">Users</button>
+    <button *ngIf="isProjectsVisible" mat-button [routerLink]="authStore.isAdmin ? 'projects' : 'projects/my-projects'">Projects</button>
+    <button *ngIf="authStore.user" mat-button routerLink="users">Users</button>
   </div>
   <div class="profile">
     <ng-container *ngIf="!authStore.user">

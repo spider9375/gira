@@ -1,10 +1,10 @@
 <div>{{projectStore.project?.name}}</div>
 <mat-drawer-container class="example-container" autosize>
-  <mat-drawer #drawer class="example-sidenav" mode="side">
+  <mat-drawer #drawer opened="true" class="example-sidenav" mode="side">
     <div class="menu">
       <button mat-button routerLink="backlog">Backlog</button>
-      <button mat-button routerLink="sprint/1">Active sprint</button>
-      <button mat-button routerLink="reports">Reports</button>
+      <button *ngIf="projectStore.activeSprint" mat-button [routerLink]="'sprint/' + projectStore.activeSprint.id">Active sprint</button>
+      <button mat-button routerLink="sprints">Sprints</button>
     </div>
   </mat-drawer>
 

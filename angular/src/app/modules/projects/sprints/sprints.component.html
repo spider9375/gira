@@ -1,0 +1,29 @@
+<h1>Sprints</h1>
+<button mat-raised-button (click)="openSprintDialog()" >Create Sprint</button>
+<table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+
+    <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef> Title </th>
+        <td mat-cell *matCellDef="let element"> {{element.title}} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef> Status </th>
+        <td mat-cell *matCellDef="let element"> {{element.isActive ? 'Active' : 'Inactive'}} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let sprint">
+                  <button *ngIf="authStore.isAdmin || authStore.isManager" (click)="openSprintDialog(sprint)" matTooltip="Edit" mat-icon-button>
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button *ngIf="authStore.isAdmin || authStore.isManager" (click)="delete(sprint.id)" matTooltip="Delete" mat-icon-button>
+                    <mat-icon>delete</mat-icon>
+                  </button>
+        </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+</table>

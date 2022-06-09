@@ -22,5 +22,4 @@ export class NavbarComponent implements OnInit {
   public get isProjectsVisible(): boolean {
     return this.authStore.isAdmin || this.authStore.isDeveloper || this.authStore.isManager
   }
-
 }

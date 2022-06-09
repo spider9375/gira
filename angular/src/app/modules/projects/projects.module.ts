@@ -11,6 +11,10 @@ import { BacklogComponent } from './backlog/backlog.component';
 import { SprintComponent } from './sprint/sprint.component';
 import { ReportsComponent } from './reports/reports.component';
 import { ProjectDialogComponent } from './project-dialog/project-dialog.component';
+import { IssueDialogComponent } from './issue-dialog/issue-dialog.component';
+import { SprintsComponent } from './sprints/sprints.component';
+import { SprintDialogComponent } from './sprint-dialog/sprint-dialog.component';
+import {MatCheckboxModule} from "@angular/material/checkbox";
 
 @NgModule({
   declarations: [
@@ -19,14 +23,17 @@ import { ProjectDialogComponent } from './project-dialog/project-dialog.componen
     BacklogComponent,
     SprintComponent,
     ReportsComponent,
-    ProjectDialogComponent
+    ProjectDialogComponent,
+    IssueDialogComponent,
+    SprintsComponent,
+    SprintDialogComponent
   ],
-  imports: [
-    CommonModule,
-    ProjectsRoutingModule,
-    SharedModule,
-    MobxAngularModule,
-  ],
+    imports: [
+        CommonModule,
+        ProjectsRoutingModule,
+        SharedModule,
+        MobxAngularModule,
+    ],
   providers: [
   ]
 })

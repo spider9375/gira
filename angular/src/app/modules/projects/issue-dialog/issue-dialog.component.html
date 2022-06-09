@@ -1,0 +1,42 @@
+<form [formGroup]="form">
+    <mat-card-content class="issue-container">
+        <mat-form-field>
+            <input formControlName="title" matInput placeholder="Title">
+        </mat-form-field>
+
+        <mat-form-field>
+            <textarea formControlName="description" matInput placeholder="Description"></textarea>
+        </mat-form-field>
+
+
+        <mat-form-field>
+            <mat-label>Assigned To</mat-label>
+            <mat-select formControlName="assignedTo">
+                <mat-option *ngFor="let user of developers" [value]="user.id">{{user.firstName + ' ' + user.lastName}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Sprint</mat-label>
+            <mat-select formControlName="sprint">
+                <mat-option *ngFor="let sprint of sprints" [value]="sprint.id">{{sprint.title}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option *ngFor="let status of statuses" [value]="status.value">{{status.label}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+        <mat-form-field>
+            <input type="number" formControlName="storyPoints" matInput placeholder="Story points">
+        </mat-form-field>
+    </mat-card-content>
+
+    <mat-card-actions>
+        <button [disabled]="form.invalid" class="register" mat-raised-button color="primary" (click)="confirm()">Confirm</button>
+        <button mat-raised-button color="warn" [mat-dialog-close]="false">Cancel</button>
+    </mat-card-actions>
+</form>

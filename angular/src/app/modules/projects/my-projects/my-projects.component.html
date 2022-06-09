@@ -1,0 +1,14 @@
+<div class="window">
+  <h2>My Projects</h2>
+
+  <div class="container">
+    <div (click)="onProjectClick(project)" class="project-card" *ngFor="let project of projects">
+      <div class="name">{{project.name}}</div>
+    </div>
+  </div>
+</div>
+
+
+
+
+

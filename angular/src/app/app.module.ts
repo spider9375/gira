@@ -10,6 +10,7 @@ import { ProjectStore } from './modules/projects/project.store';
 import { LoginComponent } from './modules/core/components/login/login.component';
 import { RegisterComponent } from './modules/core/components/register/register.component';
 import { CoreModule } from './modules/core/core.module';
+import { MyProjectsComponent } from './modules/projects/my-projects/my-projects.component';
 
 
 @NgModule({
@@ -17,7 +18,8 @@ import { CoreModule } from './modules/core/core.module';
     AppComponent,
     NavbarComponent,
     LoginComponent,
-    RegisterComponent
+    RegisterComponent,
+    MyProjectsComponent
   ],
   imports: [
     BrowserModule,

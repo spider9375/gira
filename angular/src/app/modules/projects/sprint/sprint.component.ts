@@ -1,4 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import {CdkDragDrop, moveItemInArray, transferArrayItem} from "@angular/cdk/drag-drop";
+import {ProjectStore} from "../project.store";
+import {ProjectService} from "../../core/services/project.service";
+import {take} from "rxjs";
+import {IIssue} from "../../core/models";
+import {IssueStatus} from "../../shared/utils";
+import {ActivatedRoute} from "@angular/router";
 
 @Component({
   selector: 'app-sprint',
@@ -6,10 +13,52 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./sprint.component.scss']
 })
 export class SprintComponent implements OnInit {
+  public todo: IIssue[] = [];
+  public progress: IIssue[] = [];
+  public pr: IIssue[] = [];
+  public done: IIssue[] = [];
+  public sprintId!: string;
 
-  constructor() { }
+  public issueStatus = IssueStatus;
+
+  constructor(private projectStore: ProjectStore,
+              private projectService: ProjectService,
+              private route: ActivatedRoute) { }
 
   ngOnInit(): void {
+    this.sprintId = this.route.snapshot.paramMap.get('sprintId')!;
+
+    if (this.projectStore.activeSprint?.id !== this.sprintId) {
+      this.projectService.getActiveSprint(this.projectStore.projectId).pipe(take(1))
+      .subscribe((sprint) => this.projectStore.setActiveSprint(sprint));
+    }
+
+    this.projectService.getSprintIssues(this.projectStore.projectId, this.sprintId)
+      .pipe(take(1))
+      .subscribe((issues: IIssue[]) => {
+        this.todo = issues.filter(i => i.status === IssueStatus.Todo);
+        this.progress = issues.filter(i => i.status === IssueStatus.InProgress);
+        this.pr = issues.filter(i => i.status === IssueStatus.Pr);
+        this.done = issues.filter(i => i.status === IssueStatus.Done);
+      })
   }
 
+  drop(event: CdkDragDrop<IIssue[]>, status: IssueStatus) {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex);
+    }
+
+    if (event.item.data.status !== status) {
+      this.projectService.updateIssue(
+        this.projectStore.projectId,
+        event.item.data.id,
+        { status })
+        .pipe(take(1)).subscribe();
+    }
+  }
 }

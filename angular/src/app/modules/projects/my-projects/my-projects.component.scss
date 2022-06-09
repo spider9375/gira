@@ -1,0 +1,21 @@
+@import "./src/styles";
+
+.container {
+  display: flex;
+  padding: 1rem;
+
+  .project-card {
+    cursor: pointer;
+    box-shadow: 5px 5px 8px #424242;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin: 0.5rem;
+    border: 1px solid $purple;
+
+    .name {
+      font-size: 14px;
+      font-weight: bold;
+    }
+  }
+}
+
