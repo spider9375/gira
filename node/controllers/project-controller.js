@@ -17,13 +17,13 @@ router.get("/",
   async (req, res) => {
     let projects = await Project.find();
     if (req.user.role === role.admin) {
-      return projects;
+      res.status(200).send(projects);
     }
     if (req.user.role === role.manager || req.user.role === role.developer) {
-      return res.status(200).json(projects.filter(p => req.user.projects?.includes(p. id) && !p.deleted));
+      res.status(200).json(projects.filter(p => (p.team.includes(req.userId) || p.managerId === req.userId) && !p.deleted));
     }
 
-    return res.status(401).send();
+    return res.status(500);
 })
 
 router.get("/:projectId",
@@ -129,7 +129,7 @@ router.delete("/:projectId",
     req.entity.deleted = true;
     await req.entity.save();
 
-    req.status(200).send();
+    res.status(200).send();
   });
 
 router.get("/:projectId/sprints",
@@ -139,9 +139,21 @@ router.get("/:projectId/sprints",
   entityNotDeleted,
   canAccessProject,
   async (req, res) => {
-    const sprints = await Sprint.find({project: req.params.projectId });
+    const sprints = await Sprint.find({project: req.params.projectId, deleted: false });
 
     res.status(200).send(sprints);
+});
+
+router.get("/:projectId/sprints/active",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  canAccessProject,
+  async (req, res) => {
+    const sprint = await Sprint.findOne({project: req.params.projectId, isActive: true });
+
+    res.status(200).send(sprint);
   });
 
 router.post("/:projectId/sprints",
@@ -151,27 +163,24 @@ router.post("/:projectId/sprints",
   entityNotDeleted,
   allowedRoles([role.admin, role.manager]),
   async (req, res) => {
-    req.body.id = mongoose.Types.ObjectId().toHexString();
-    req.body.status = 'inactive';
-
-    try {
-      await validate(req, res, sprintValidation, req.body);
-    } catch (error) {
-      return sendErrorResponse(req, res, 400, error.message);
-    }
-
     const newSprint = {
-      _id: req.body.id,
-      start: req.body.start,
-      end: req.body.end,
+      id: mongoose.Types.ObjectId().toHexString(),
       title: req.body.title,
-      status: 'inactive',
+      isActive: false,
       addedBy: req.userId,
       project: req.params.projectId,
       deleted: false,
     }
 
-    await Sprint.create(newSprint)
+    try {
+      await validate(req, res, sprintValidation, newSprint);
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
+    }
+
+    const entity = Object.assign({}, {_id: newSprint.id, ...newSprint});
+
+    await Sprint.create(entity)
 
     res.status(201).send();
   });
@@ -216,6 +225,7 @@ router.delete('/:projectId/sprints/:sprintId',
     res.status(200).send();
   });
 
+// getAllIssues
 router.get("/:projectId/issues",
   authenticated,
   paramsExist(['projectId']),
@@ -223,10 +233,39 @@ router.get("/:projectId/issues",
   entityNotDeleted,
   canAccessProject,
   async (req, res) => {
-    const issues = await Issue.find({_id: { $in: req.entity.issues } });
+    const issues = (await Issue.find({project: req.params.projectId, deleted: false })).map(i => i.toJSON());
+
+    for (const issue of issues) {
+      if (issue.sprint) {
+        const sprint = await Sprint.findById(issue.sprint);
+        issue.sprint = sprint.title;
+      }
+    }
 
     res.status(200).send(issues);
 });
+
+// getSprintIssues
+router.post("/:projectId/issues/filtered",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  canAccessProject,
+  async (req, res) => {
+    let query =  {
+      project: req.params.projectId,
+      deleted: false
+    }
+
+    if (req.body.sprint) {
+      query.sprint = req.body.sprint;
+    }
+
+    const issues = (await Issue.find(query)).map(i => i.toJSON());
+
+    res.status(200).send(issues);
+  });
 
 router.post("/:projectId/issues",
   authenticated,
@@ -240,9 +279,9 @@ router.post("/:projectId/issues",
     const issue = await Issue.create({
       _id: req.body.id,
       title: req.body.title,
-      status: status.backlog,
+      status: req.body.sprint ? status.todo : status.backlog,
       addedBy: req.userId,
-      sprint: req.body.sprint,
+      sprint: req.body.sprint ?? null,
       assignedTo: req.body.assignedTo,
       project: req.params.projectId,
       storyPoints: req.body.storyPoints,
@@ -257,21 +296,27 @@ router.post("/:projectId/issues",
       return sendErrorResponse(req, res, 400, error.message);
     }
 
-    const user = await User.findById(req.body.assignedTo);
+    try {
+      let user = null;
 
-    if (user) {
-      user.issues.push(req.body.id);
+      if (req.body.assignedTo) {
+      user = await User.findById(req.body.assignedTo);
+
+      if (user) {
+        user.issues.push(req.body.id);
+      }
     }
 
-    try {
+    req.entity.issues.push(issue.id);
+
       if (user) {
         await user.save();
       }
       await issue.save();
+      await req.entity.save();
     } catch (error) {
-      return sendErrorResponse(req, res, 400, error.message);
+      sendErrorResponse(req, res, 400, error.message);
     }
-
 
     res.status(201).send();
 });
@@ -287,7 +332,7 @@ router.put("/:projectId/issues/:issueId",
     const newAssigned = req.body.assignedTo;
     const usersUpdated = [];
 
-    if (prevAssigned !== newAssigned) {
+    if (newAssigned && prevAssigned !== newAssigned) {
       const user = await User.findById(prevAssigned);
 
       if (user) {
@@ -301,6 +346,7 @@ router.put("/:projectId/issues/:issueId",
         newUser.issues.push(req.entity.id);
         usersUpdated.push(newUser);
       }
+
     }
 
     Object.assign(req.entity, req.body);
@@ -316,5 +362,25 @@ router.put("/:projectId/issues/:issueId",
 
     res.status(200).send();
   });
+
+router.delete('/:projectId/issues/:issueId',
+  authenticated,
+  paramsExist(['projectId', 'issueId']),
+  entityExists(Project, 'projectId'),
+  entityExists(Issue, 'issueId'),
+  entityNotDeleted,
+  allowedRoles([role.admin, role.manager, role.developer]),
+  async (req, res) => {
+    req.entity.deleted = true;
+
+    try {
+      await validate(req, res, issueValidation, req.entity);
+      await req.entity.save();
+    } catch (error) {
+      return sendErrorResponse(req, res, 400, error.message);
+    }
+
+    res.status(200).send();
+});
 
 module.exports = router;

@@ -5,7 +5,7 @@ const issueSchema = new mongoose.Schema({
   title: { type: String, required: true, min: 3, max: 128 },
   status: { type: String, required: true },
   addedBy: { type: String, required: true },
-  sprint: { type: String, required: true },
+  sprint: { type: String },
   assignedTo: { type: String },
   project: { type: String, required: true },
   storyPoints: { type: Number, min: 0 },

@@ -3,11 +3,10 @@ const bcrypt = require('bcrypt');
 
 const sprintSchema = new mongoose.Schema({
     title: { type: String, required: true, min: 3, max: 128 },
-    start: { type: Date, required: false },
-    end: { type: Date, required: false },
-    status: { type: String, required: true },
+    isActive: { type: Boolean, required: true },
     project: { type: String, required: true },
-    issues: { type: Array },
+    // issues: { type: Array },
+    addedBy: {type: String, required: true, min: 24, max: 24 },
     deleted: { type: Boolean, default: false },
   },
   {

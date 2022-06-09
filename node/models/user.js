@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
     min: 3,
     max: 255,
     trim: true,
+    unique: true,
   },
   firstName: {
     type: String,
@@ -37,12 +38,12 @@ const userSchema = new mongoose.Schema({
     min: 6,
     max: 512,
   },
-  projects: {
-    type:[String]
-  },
-  issues: {
-    type:[String]
-  },
+  // projects: {
+  //   type:[String]
+  // },
+  // issues: {
+  //   type:[String]
+  // },
   role: {
     type: String,
     default: 'user',
