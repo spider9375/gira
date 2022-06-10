@@ -3,9 +3,10 @@ import {CdkDragDrop, moveItemInArray, transferArrayItem} from "@angular/cdk/drag
 import {ProjectStore} from "../project.store";
 import {ProjectService} from "../../core/services/project.service";
 import {take} from "rxjs";
-import {IIssue} from "../../core/models";
+import {IIssue, IUser} from "../../core/models";
 import {IssueStatus} from "../../shared/utils";
 import {ActivatedRoute} from "@angular/router";
+import {UserService} from "../../core/services/user.service";
 
 @Component({
   selector: 'app-sprint',
@@ -18,15 +19,20 @@ export class SprintComponent implements OnInit {
   public pr: IIssue[] = [];
   public done: IIssue[] = [];
   public sprintId!: string;
+  public users: { [userId: string]: IUser } = {};
 
   public issueStatus = IssueStatus;
 
   constructor(private projectStore: ProjectStore,
               private projectService: ProjectService,
+              private userService: UserService,
               private route: ActivatedRoute) { }
 
   ngOnInit(): void {
     this.sprintId = this.route.snapshot.paramMap.get('sprintId')!;
+
+    this.userService.getProjectUsers(this.projectStore.projectId).pipe(take(1))
+      .subscribe((users) => this.users = Object.assign({}, ...users.map(u => ({[u.id]: u}))));
 
     if (this.projectStore.activeSprint?.id !== this.sprintId) {
       this.projectService.getActiveSprint(this.projectStore.projectId).pipe(take(1))

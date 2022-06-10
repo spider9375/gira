@@ -11,7 +11,7 @@ const projectController = require('./controllers/project-controller')
 const sendErrorResponse = require('./utils').sendErrorResponse;
 
 const corsOptions = {
-    origin: 'http://localhost:4200', // frontend server
+    origin: ['http://localhost:3000', 'http://localhost:4200'], // frontend server
 }
 app.use(morgan("dev"))
 app.use(cors(corsOptions))

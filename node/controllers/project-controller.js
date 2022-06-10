@@ -144,13 +144,9 @@ router.get("/:projectId/sprints/active",
   entityNotDeleted,
   canAccessProject,
   async (req, res) => {
-    const sprint = await Sprint.findOne({project: req.params.projectId, isActive: true });
+    const sprint = await Sprint.findOne({project: req.params.projectId, isActive: true, deleted: false });
 
-    if (sprint){
-      res.status(200).send(sprint);
-    } else {
-      res.status(404).send();
-    }
+    res.status(200).json(sprint);
   });
 
 router.post("/:projectId/sprints",
@@ -163,7 +159,7 @@ router.post("/:projectId/sprints",
     const newSprint = {
       id: mongoose.Types.ObjectId().toHexString(),
       title: req.body.title,
-      isActive: false,
+      isActive: req.body.isActive,
       addedBy: req.userId,
       project: req.params.projectId,
       deleted: false,
@@ -252,9 +248,9 @@ router.post("/:projectId/issues/filtered",
       query.sprint = req.body.sprint;
     }
 
-    const issues = (await Issue.find(query) ?? []).map(i => i.toJSON());
+    const issues = await Issue.find(query);
 
-    res.status(200).send(issues);
+    res.status(200).json(issues);
   });
 
 router.post("/:projectId/issues",
@@ -310,21 +306,21 @@ router.put("/:projectId/issues/:issueId",
   entityNotDeleted,
   allowedRoles([role.admin, role.manager]),
   async (req, res) => {
-    const user = await User.findById(req.body.assignedTo);
-
-    if (!user){
-      throw('Assigned user does not exist')
-    }
-
-    Object.assign(req.entity, req.body);
-
     try {
+      if (req.body.assignedTo) {
+        const user = await User.findById(req.body.assignedTo);
+
+        if (!user){
+          throw('Assigned user does not exist')
+        }
+      }
+
+      Object.assign(req.entity, req.body);
       await validate(req, res, issueValidation, req.entity);
     } catch (error) {
       return sendErrorResponse(req, res, 400, error.message);
     }
 
-    await User.bulkSave(usersUpdated);
     await req.entity.save();
 
     res.status(200).send();

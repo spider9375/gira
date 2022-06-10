@@ -66,6 +66,6 @@
   <div class="issue">
     <div>{{issue.title}}</div>
     <div>{{issue.storyPoints}}</div>
-    <div>{{issue.assignedTo}}</div>
+    <div>{{users[issue.assignedTo]?.firstName}}</div>
   </div>
 </ng-template>

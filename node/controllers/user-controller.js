@@ -7,6 +7,7 @@ const { sendErrorResponse } = require("../utils");
 const User = require("../models/user");
 const entityNotDeleted = require("../middlewares/entity-not-deleted-middleware");
 const entityExists = require("../middlewares/entity-exists-middleware");
+const Project = require("../models/project");
 
 router.post("/",
   authenticated,
@@ -17,6 +18,19 @@ router.post("/",
   if (!users) return sendErrorResponse(req, res, 204, `No users`);
   return res.status(200).send(users);
 });
+
+router.get("/project/:projectId",
+  authenticated,
+  paramsExist(['projectId']),
+  entityExists(Project, 'projectId'),
+  entityNotDeleted,
+  async (req, res) => {
+    const ids = [...req.entity.team, req.entity.managerId];
+    const users = await User.find({ _id: {$in: ids} });
+
+    if (!users) return sendErrorResponse(req, res, 204, `No users`);
+    return res.status(200).send(users);
+  });
 
 router.get( "/:userId",
   authenticated,

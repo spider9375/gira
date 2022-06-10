@@ -1,4 +1,4 @@
-const mongoose = require('node/mongoose');
+const mongoose = require('mongoose');
 const uri = process.env.connectionString
 mongoose.Promise = global.Promise;
 mongoose.connect(uri).then(() => {

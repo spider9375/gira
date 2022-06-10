@@ -13,6 +13,10 @@ export class UserService {
     return this.http.post<IUser[]>('users', { role: params?.role});
   }
 
+  public getProjectUsers(projectId: string): Observable<IUser[]> {
+    return this.http.get<IUser[]>(`users/project/${projectId}`);
+  }
+
   public delete(id: string): Observable<void> {
     return this.http.delete(`users/${id}`);
   }

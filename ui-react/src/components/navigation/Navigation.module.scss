@@ -1,0 +1,14 @@
+.navbar {
+  display: flex;
+  background: #61dafb;
+
+  .listItems {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+
+    .left,.right {
+      display: flex;
+    }
+  }
+}
