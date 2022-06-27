@@ -5,10 +5,17 @@
   .listItems {
     width: 100%;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
+    padding-right: 24px;
+    padding-left: 0;
 
-    .left,.right {
+    .left, .right {
       display: flex;
     }
   }
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
 }

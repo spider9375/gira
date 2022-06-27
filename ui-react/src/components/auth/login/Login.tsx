@@ -1,9 +1,9 @@
+import * as React from "react";
 import {FC, FormEvent, memo, useCallback, useRef} from "react";
 import {useDispatch} from "react-redux";
 import {Button, Input, InputLabel} from "@mui/material";
-import {loginAsyncAction} from "../../store/auth/auth.action-creators";
+import {loginAsyncAction} from "../../../store/auth/auth.action-creators";
 import styles from './Login.module.scss';
-import * as React from "react";
 
 const Login: FC<any> = () => {
     const dispatch = useDispatch();

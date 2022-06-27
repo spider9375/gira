@@ -16,14 +16,14 @@ const Sprint = require("../models/sprint");
 router.get("",
   authenticated,
   async (req, res) => {
-    const projects = await Project.find();
+    const projects = await Project.find({deleted: false});
 
     if (req.user.role === role.admin) {
-      res.status(200).send(projects);
+      return res.status(200).send(projects);
     }
 
     if (req.user.role === role.manager || req.user.role === role.developer) {
-      res.status(200).json(projects.filter(p => (p.team.includes(req.userId) || p.managerId === req.userId) && !p.deleted));
+      return res.status(200).json(projects.filter(p => (p.team.includes(req.userId) || p.managerId === req.userId)));
     }
 
     return res.status(500);

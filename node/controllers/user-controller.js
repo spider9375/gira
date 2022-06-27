@@ -13,7 +13,7 @@ router.post("/",
   authenticated,
   async (req, res) => {
   const roleFilter = req.body.role;
-  const users = roleFilter ? await User.find({ role: roleFilter }) : await User.find();
+  const users = roleFilter ? await User.find({ role: roleFilter, deleted: false }) : await User.find({deleted: false});
 
   if (!users) return sendErrorResponse(req, res, 204, `No users`);
   return res.status(200).send(users);

@@ -1,0 +1,9 @@
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  > div[class^='MuiFormControl-root'] {
+    margin: 0.5rem !important;
+  }
+}
