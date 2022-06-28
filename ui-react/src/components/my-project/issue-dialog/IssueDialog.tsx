@@ -5,6 +5,7 @@ import {
     DialogContent,
     DialogTitle,
     FormControl,
+    FormHelperText,
     InputLabel,
     MenuItem,
     OutlinedInput,
@@ -65,14 +66,19 @@ const IssueDialog: FC<IssueDialogProps> = ({open = false, onClose}) => {
         onClose(submit ? state : null);
     }, [onClose, state]);
 
+    const isTitleInvalid = useMemo(() => {
+        return state.title.length < 3 || state.title.length > 128 || !new RegExp(/^[a-zA-Z]*$/).test(state.title);
+    }, [state])
+
     return <Dialog open={open} onClose={closeHandler(false)}>
         <DialogTitle>{issue ? 'Edit issue' : 'Create issue'}</DialogTitle>
         <DialogContent>
             <form className={styles.form} ref={formRef}>
                 <FormControl>
                     <TextField value={state?.title} onChange={updateState} label='Title' name='title'/>
-                    {/*<FormHelperText className={styles.error}>must be between 3 and 128 characters no special*/}
-                    {/*    symbols</FormHelperText>*/}
+                    {isTitleInvalid &&
+                      <FormHelperText className={styles.error}>must be between 3 and 128 characters no special
+                        symbols</FormHelperText>}
                 </FormControl>
                 <FormControl>
                     <TextField name='description' value={state?.description} onChange={updateState}
@@ -87,6 +93,7 @@ const IssueDialog: FC<IssueDialogProps> = ({open = false, onClose}) => {
                         onChange={updateState}
                         input={<OutlinedInput label="Assigned To"/>}
                     >
+                        <MenuItem value={''}>None</MenuItem>
                         {developers.map((developer) => (
                             <MenuItem
                                 key={developer.id}
@@ -100,7 +107,7 @@ const IssueDialog: FC<IssueDialogProps> = ({open = false, onClose}) => {
                 <FormControl>
                     <InputLabel>Sprint</InputLabel>
                     <Select
-                        name="team"
+                        name="sprint"
                         value={state?.sprint}
                         onChange={updateState}
                         input={<OutlinedInput label="Sprint"/>}

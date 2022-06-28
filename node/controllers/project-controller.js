@@ -209,6 +209,11 @@ router.delete('/:projectId/sprints/:sprintId',
     req.entity.deleted = true;
 
     try {
+      let issues = await Issue.find({sprint: req.entity.id});
+      issues.forEach(i => {
+        i.sprint = '';
+        i.save();
+      })
       await req.entity.save();
     } catch (error) {
       return sendErrorResponse(req, res, 400, error.message);
@@ -261,6 +266,7 @@ router.post("/:projectId/issues",
   allowedRoles([role.admin, role.manager]),
   async (req, res) => {
     req.body.id = mongoose.Types.ObjectId().toHexString();
+    try {
 
     const issue = await Issue.create({
       _id: req.body.id,
@@ -276,13 +282,7 @@ router.post("/:projectId/issues",
       deleted: false,
     })
 
-    try {
       await validate(req, res, issueValidation, issue);
-    } catch (error) {
-      return sendErrorResponse(req, res, 400, error.message);
-    }
-
-    try {
       if (req.body.assignedTo) {
       const user = await User.findById(req.body.assignedTo);
 

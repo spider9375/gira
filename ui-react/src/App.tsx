@@ -12,6 +12,8 @@ import ProjectOverlay from "./components/my-project/project-overlay/ProjectOverl
 import Register from "./components/auth/register/Register";
 import Users from "./components/users/users-table/Users";
 import EditUser from "./components/users/edit-user/EditUser";
+import ActiveSprint from "./components/my-project/active-sprint/ActiveSprint";
+import Sprints from "./components/my-project/sprints/Sprints";
 
 function App() {
     const isLoggedIn = useIsLoggedIn();
@@ -29,6 +31,8 @@ function App() {
                     <Route path="my-projects" element={<MyProjects/>}></Route>
                     <Route path="my-projects/:id" element={<Project/>}></Route>
                     <Route path='my-projects/:id/backlog' element={<Backlog/>}></Route>
+                    <Route path='my-projects/:id/active-sprint' element={<ActiveSprint/>}></Route>
+                    <Route path='my-projects/:id/sprints' element={<Sprints/>}></Route>
                     <Route path="projects" element={<Projects/>}></Route>
                     <Route path="projects/:id" element={<CreateEditProject/>}></Route>
                     <Route path="users" element={<Users/>}></Route>

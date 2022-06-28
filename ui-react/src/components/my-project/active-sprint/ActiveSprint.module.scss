@@ -1,0 +1,30 @@
+.title {
+  text-align: center;
+}
+
+.wrapper {
+  display: flex;
+  width: 100%;
+  padding: 3rem;
+  gap: 24px;
+
+  .column {
+    border: 1px solid black;
+    width: calc(calc(100% / 4) - 40px);
+
+    .list {
+      padding: 0;
+
+      .listItem {
+        padding: 4px;
+        border: 1px solid grey;
+      }
+    }
+  }
+}
+
+.moveToTitle {
+  font-weight: bold !important;
+  padding: 4px;
+  border-bottom: 1px solid dodgerblue;
+}

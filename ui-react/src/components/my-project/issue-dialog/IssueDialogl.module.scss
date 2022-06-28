@@ -1,9 +1,13 @@
 .form {
-  width: 100%;
+  width: 20vw;
   display: flex;
   flex-direction: column;
 
   > div[class^='MuiFormControl-root'] {
     margin: 0.5rem !important;
   }
+}
+
+.error {
+  color: red !important;
 }

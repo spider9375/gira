@@ -6,7 +6,8 @@ import {CircularProgress} from "@mui/material";
 import styles from './MyProjects.module.scss'
 import {useNavigate} from "react-router-dom";
 import {IProject} from "../../../models";
-import {setProjectAction} from "../../../store/projects/projects.actions";
+import {resetProjectStoreAction, setProjectAction} from "../../../store/projects/projects.actions";
+import {resetIssueStoreAction} from "../../../store/issues/issues.actions";
 
 const MyProjects = () => {
     const dispatch = useDispatch();
@@ -26,8 +27,10 @@ const MyProjects = () => {
     }, []);
 
     const openProject = useCallback((project: IProject) => () => {
+        dispatch(resetProjectStoreAction());
+        dispatch(resetIssueStoreAction());
         dispatch(setProjectAction(project));
-        navigate(project.id);
+        navigate(project.id + '/active-sprint');
     }, [dispatch, navigate]);
 
     return (<div className={styles.container}>

@@ -5,6 +5,7 @@ import {getProjectAsyncAction} from "../../../store/projects/projects.action-cre
 import {useDispatch} from "react-redux";
 import styles from "./Backlog.module.scss";
 import {
+    Button,
     CircularProgress,
     IconButton,
     Paper,
@@ -60,13 +61,19 @@ const Backlog = () => {
     const dialogCloseHandler = useCallback((issue: IIssue | null) => {
         setOpen(false);
         if (issue) {
-            dispatch(updateIssueAsyncAction({projectId: project.id, issueId: issue.id, payload: issue}))
-                .then(() => dispatch(getAllIssuesAsyncAction(project.id)))
+            if (issue.id) {
+                dispatch(updateIssueAsyncAction({projectId: project.id, issueId: issue.id, payload: issue}))
+                    .then(() => dispatch(getAllIssuesAsyncAction(project.id)))
+            } else {
+                IssueApi.create(project.id, issue).then(() => dispatch(getAllIssuesAsyncAction(project.id)))
+            }
+            
         }
     }, [dispatch, project])
 
     return <div className={styles.container}>
         <h2>Backlog</h2>
+        <Button onClick={() => setOpen(true)}>Create issue</Button>
         {loading ? <CircularProgress/> : <TableContainer component={Paper}>
             <Table sx={{minWidth: 650}} aria-label="simple table">
                 <TableHead>
@@ -101,7 +108,7 @@ const Backlog = () => {
                 </TableBody>
             </Table>
         </TableContainer>}
-        <IssueDialog onClose={dialogCloseHandler} open={open}/>
+        {open && <IssueDialog onClose={dialogCloseHandler} open={open}/>}
     </div>
 }
 

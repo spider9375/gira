@@ -1,9 +1,8 @@
 import * as React from "react";
-import {memo, useCallback, useEffect, useRef} from "react";
+import {memo, useEffect, useRef} from "react";
 import {useDispatch} from "react-redux";
 import {useLoadingProject, useProject} from "../../../store/projects/projects.hooks";
 import {CircularProgress} from "@mui/material";
-import {openOverlay} from "../../../store/overlays/overlays.actions";
 import {useLocation, useParams} from "react-router-dom";
 import {getProjectAsyncAction} from "../../../store/projects/projects.action-creators";
 
@@ -21,11 +20,6 @@ const Project = () => {
             firstLoad.current = false;
         }
     }, [location, params, dispatch, project])
-
-
-    const openDrawer = useCallback(() => {
-        dispatch(openOverlay());
-    }, [dispatch]);
 
     return (<div>
         {loading && <CircularProgress/>}
