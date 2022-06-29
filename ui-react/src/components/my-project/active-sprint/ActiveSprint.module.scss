@@ -16,8 +16,12 @@
       padding: 0;
 
       .listItem {
+        display: flex;
         padding: 4px;
         border: 1px solid grey;
+        align-content: center;
+        align-items: center;
+        justify-content: space-between;
       }
     }
   }
@@ -27,4 +31,13 @@
   font-weight: bold !important;
   padding: 4px;
   border-bottom: 1px solid dodgerblue;
+}
+
+.issueTitle {
+  font-weight: bold;
+}
+
+.developer {
+  padding: 0 4px;
+  font-size: 12px;
 }
