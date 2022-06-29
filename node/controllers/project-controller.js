@@ -91,7 +91,7 @@ router.put("/:projectId",
   async (req, res) => {
     try {
       Object.assign(req.entity, req.body);
-      const userIds = [...req.entity.team, req.entity.managerId];
+      const userIds = [...req.entity.team, req.entity.managerId].filter(x => x);
 
       const users = await User.find({_id: {$in: userIds}}) ?? [];
 
@@ -186,10 +186,18 @@ router.put('/:projectId/sprints/:sprintId',
   entityNotDeleted,
   allowedRoles([role.admin, role.manager]),
   async (req, res) => {
-    Object.assign(req.entity, req.body);
-
     try {
+      Object.assign(req.entity, req.body);
       await validate(req, res, sprintValidation, req.entity);
+
+      if (req.entity.isActive) {
+      const prevActiveSprint = await Sprint.findOne({isActive: true});
+      if (prevActiveSprint) {
+        prevActiveSprint.isActive = false;
+        await prevActiveSprint.save();
+      }
+    }
+
       await req.entity.save();
     } catch (error) {
       return sendErrorResponse(req, res, 400, error.message);

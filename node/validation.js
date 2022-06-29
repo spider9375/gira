@@ -32,8 +32,6 @@ const userValidation = (data) => {
     password: Joi.string().regex(/^\$2[ayb]\$.{56}$/),
     email: Joi.string().email().lowercase().required().min(6),
     role: Joi.string().valid("manager", "admin", "user", "developer"),
-    // issues: Joi.array().items(Joi.string().min(24).max(24)).optional(),
-    // projects: Joi.array().items(Joi.string().min(24).max(24)).optional(),
     deleted: Joi.boolean(),
     photo:Joi.string().uri().optional(),
     updatedAt: Joi.date(),
@@ -46,10 +44,9 @@ const projectValidation = (data) => {
   const schema = Joi.object({
     id: Joi.string().min(24).max(24),
     name: Joi.string().min(3).required(),
-    managerId: Joi.string().min(24).max(24),
+    managerId: Joi.string().min(24).max(24).allow(''),
     description: Joi.string().optional(),
-    // issues: Joi.array().items(Joi.string().length(24)).optional(),
-    team: Joi.array().items(Joi.string().length(24)).optional(),
+    team: Joi.array().items(Joi.string().min(24).max(24).allow('')).optional(),
     photo: Joi.string().uri().optional(),
     deleted: Joi.boolean(),
     updatedAt: Joi.date(),
@@ -96,6 +93,7 @@ const validate = async (req, res, validatorFn, entity) => {
   const obj = JSON.parse(JSON.stringify(entity));
   const { error } = validatorFn(obj);
   if (error) {
+    console.log(error.details[0].message);
     throw { message: error.details[0].message };
   }
 }

@@ -52,6 +52,13 @@ export class SprintsComponent implements OnInit {
   private init(): void {
     this.projectService.getAllSprints(this.projectStore.projectId)
         .pipe(take(1))
-        .subscribe((sprints: ISprint[]) => this.dataSource = new MatTableDataSource(sprints))
+        .subscribe((sprints: ISprint[]) => {
+          this.dataSource = new MatTableDataSource(sprints)
+          const activeSprint = sprints.find(x => x.isActive);
+
+          if (activeSprint) {
+            this.projectStore.setActiveSprint(activeSprint)
+          }
+        })
   }
 }

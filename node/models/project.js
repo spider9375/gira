@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const projectSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, min: 3, max: 128 },
-    managerId: { type: String, required: true },
+    managerId: { type: String },
     description: { type: String, max: 4096 },
     photo: { type: String},
     team: { type: [String] },

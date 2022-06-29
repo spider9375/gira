@@ -30,11 +30,6 @@ const CreateEditProject = () => {
     const [developers, setDevelopers] = useState<IUser[]>([]);
 
     useEffect(() => {
-        UserApi.getUsers({role: 'manager'}).then((res) => setManagers(res));
-        UserApi.getUsers({role: 'developer'}).then((res) => setDevelopers(res));
-    }, [])
-
-    useEffect(() => {
         if (project) {
             setState(project);
         }
@@ -44,8 +39,10 @@ const CreateEditProject = () => {
         if (firstLoad.current) {
             if (params.id !== project?.id) {
                 dispatch(getProjectAsyncAction(params.id))
-                firstLoad.current = false;
             }
+            firstLoad.current = false;
+            UserApi.getUsers({role: 'manager'}).then((res) => setManagers(res));
+            UserApi.getUsers({role: 'developer'}).then((res) => setDevelopers(res));
         }
     }, [dispatch, params.id, project]);
 
@@ -59,9 +56,15 @@ const CreateEditProject = () => {
 
     const submit = useCallback((e: any) => {
         e.preventDefault();
-        dispatch(updateProjectAsyncAction({projectId: project.id, payload: state}))
+        const payload = state;
+        payload.team = payload.team.filter(x => x);
+        dispatch(updateProjectAsyncAction({projectId: project.id, payload}))
             .then(() => navigate(-1))
-    }, [dispatch, navigate, state])
+    }, [dispatch, navigate, project, state])
+
+    const cancel = useCallback(() => {
+        navigate(-1);
+    }, [navigate])
 
     return <>
         {!loading ? <div>
@@ -79,11 +82,12 @@ const CreateEditProject = () => {
                 <FormControl>
                     <InputLabel>Manager</InputLabel>
                     <Select
-                        name="manager"
-                        value={project?.managerId}
+                        name="managerId"
+                        value={state?.managerId}
                         onChange={updateState}
                         input={<OutlinedInput label="Manager"/>}
                     >
+                        <MenuItem key={''} value={''}>None</MenuItem>
                         {managers.map((manager) => (
                             <MenuItem
                                 key={manager.id}
@@ -103,6 +107,7 @@ const CreateEditProject = () => {
                         onChange={updateState}
                         input={<OutlinedInput label="Developers"/>}
                     >
+                        <MenuItem key={''} value={''}>None</MenuItem>
                         {developers.map((manager) => (
                             <MenuItem
                                 key={manager.id}
@@ -114,7 +119,7 @@ const CreateEditProject = () => {
                     </Select>
                 </FormControl>
                 <Button type='submit'>Submit</Button>
-                <Button color='error'>Cancel</Button>
+                <Button onClick={cancel} color='error'>Cancel</Button>
             </form>
         </div> : null}
     </>
