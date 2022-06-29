@@ -1,3 +1,0 @@
-const userApi = Object.freeze({
-
-})
